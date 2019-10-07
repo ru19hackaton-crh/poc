@@ -9,7 +9,7 @@ import websockets
 
 
 async def hello():
-    uri = "ws://localhost:1234"
+    uri = "ws://localhost:9000"
     async with websockets.connect(uri) as websocket:
         name = "Crazy Robot Hackers"
 

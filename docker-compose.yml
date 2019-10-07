@@ -3,7 +3,7 @@ services:
   brain:
     build: brain/
     ports:
-      - 1234:1234
+      - 9000:9000
   monitor:
     build: monitor/
     depends_on:
