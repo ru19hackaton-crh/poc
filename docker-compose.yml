@@ -1,0 +1,12 @@
+version: "3"
+services:
+  brain:
+    build: brain/
+    ports:
+      - 1234:1234
+  monitor:
+    build: monitor/
+    depends_on:
+      - brain
+    ports:
+      - 80:80
