@@ -10,3 +10,8 @@ services:
       - brain
     ports:
       - 80:80
+  robot:
+    build: robot/
+    network_mode: host
+    depends_on:
+      - brain
