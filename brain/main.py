@@ -1,20 +1,47 @@
 #!/usr/bin/env python3
 
+import py_trees
+from py_trees.blackboard import BlackboardClient
+
 import logging
 from tornado import websocket
 import tornado.ioloop
 from tornado.log import enable_pretty_logging
 enable_pretty_logging()
 
+class ManualDriveBehaviour(py_trees.behaviour.Behaviour):
+    def __init__(self, name="Manual Drive"):
+        super().__init__(name)
+        self.blackboard.register_key("manual", read=True)
+
+    def update(self):
+        return py_trees.common.Status.INVALID
+
+    def terminate(self, new_status):
+        pass
+
+def create_tree():
+    root = py_trees.composites.Selector(name="POC root")
+    manual = ManualDriveBehaviour()
+    root.add_children([manual])
+    return root
+
 class Brain:
     def __init__(self):
         self._monitor = None
         self._robot = None
 
+        self.tree = create_tree()
+
+        self.bb = BlackboardClient(name="Brain", write={"manual"})
+        self.bb.manual = False
+
     def operate(self):
-        # brain loop
-        #logging.info("foo")
-        return
+        py_trees.blackboard.Blackboard.enable_activity_stream(maximum_size=100)
+        self.tree.tick()
+        logging.info(py_trees.display.ascii_tree(self.tree, show_status=True))
+        logging.info(py_trees.display.unicode_blackboard_activity_stream())
+        py_trees.blackboard.Blackboard.activity_stream.clear()
 
     @property
     def monitor(self):
@@ -32,14 +59,22 @@ class Brain:
         self._robot = robot
         logging.info("new robot set")
 
+    @property
+    def manual(self):
+        return self.bb.manual
+    @manual.setter
+    def manual(self, state):
+        self.bb.manual = state
+        logging.info(f"manual set to {state}")
+
     def parse_robot(self, message):
         self.robot.write_message(u"Robot said: %s" % message)
 
     def parse_monitor(self, message):
         if message == "manual on":
-            logging.info("setting manual on")
+            self.manual = True
         elif message == "manual off":
-            logging.info("setting manual off")
+            self.manual = False
         else:
             self.monitor.write_message(f"message: {message}")
         return
