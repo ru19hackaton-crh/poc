@@ -32,6 +32,18 @@ class Brain:
         self._robot = robot
         logging.info("new robot set")
 
+    def parse_robot(self, message):
+        self.robot.write_message(u"Robot said: %s" % message)
+
+    def parse_monitor(self, message):
+        if message == "manual on":
+            logging.info("setting manual on")
+        elif message == "manual off":
+            logging.info("setting manual off")
+        else:
+            self.monitor.write_message(f"message: {message}")
+        return
+
 class CommonBrainHandler(websocket.WebSocketHandler):
 
     def initialize(self, brain):
@@ -51,14 +63,14 @@ class MonitorHandler(CommonBrainHandler):
         self.brain.monitor = self
 
     def on_message(self, message):
-        self.write_message(u"Monitor said: %s" % message)
+        self.brain.parse_monitor(message)
 
 class RobotHandler(CommonBrainHandler):
     def open(self):
         self.brain.robot = self
 
     def on_message(self, message):
-        self.write_message(u"Robot said: %s" % message)
+        self.brain.parse_robot(message)
 
 
 if __name__ == "__main__":
