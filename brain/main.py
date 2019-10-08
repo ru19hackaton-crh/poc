@@ -2,6 +2,7 @@
 
 import py_trees
 from py_trees.blackboard import BlackboardClient
+from py_trees.common import Status
 
 import logging
 from tornado import websocket
@@ -13,16 +14,34 @@ class ManualDriveBehaviour(py_trees.behaviour.Behaviour):
     def __init__(self, name="Manual Drive"):
         super().__init__(name)
         self.blackboard.register_key("manual", read=True)
+        self.blackboard.register_key("keys", read=True)
+
+    def setup(self, timeout, brain=None):
+        if brain:
+            self.brain = brain
+        return True
 
     def update(self):
-        return py_trees.common.Status.INVALID
+        if self.blackboard.manual:
+            if self.status != Status.RUNNING:
+                # inform robot that manual is on
+                pass
+            if self.blackboard.keys:
+                #self.brain.robot.write_message(f"keys: {self.blackboard.keys}")
+            return Status.RUNNING
+        elif self.status == Status.RUNNING:
+            # inform robot that manual is off
+            return Status.SUCCESS
+        else:
+            return py_trees.common.Status.INVALID
 
     def terminate(self, new_status):
         pass
 
-def create_tree():
+def create_tree(brain):
     root = py_trees.composites.Selector(name="POC root")
     manual = ManualDriveBehaviour()
+    manual.setup(0, brain)
     root.add_children([manual])
     return root
 
@@ -31,14 +50,16 @@ class Brain:
         self._monitor = None
         self._robot = None
 
-        self.tree = create_tree()
+        self.tree = create_tree(self)
+        self.behaviour_tree = py_trees.trees.BehaviourTree(self.tree)
 
-        self.bb = BlackboardClient(name="Brain", write={"manual"})
+        self.bb = BlackboardClient(name="Brain", write={"manual", "keys"})
         self.bb.manual = False
+        self.bb.keys = set()
 
     def operate(self):
         py_trees.blackboard.Blackboard.enable_activity_stream(maximum_size=100)
-        self.tree.tick()
+        self.behaviour_tree.tick()
         logging.info(py_trees.display.ascii_tree(self.tree, show_status=True))
         logging.info(py_trees.display.unicode_blackboard_activity_stream())
         py_trees.blackboard.Blackboard.activity_stream.clear()
@@ -65,7 +86,6 @@ class Brain:
     @manual.setter
     def manual(self, state):
         self.bb.manual = state
-        logging.info(f"manual set to {state}")
 
     def parse_robot(self, message):
         self.robot.write_message(u"Robot said: %s" % message)
@@ -75,6 +95,12 @@ class Brain:
             self.manual = True
         elif message == "manual off":
             self.manual = False
+        elif message.endswith("up"):
+            key = message.split(" ")[0]
+            self.bb.keys.remove(key)
+        elif message.endswith("down"):
+            key = message.split(" ")[0]
+            self.bb.keys.add(key)
         else:
             self.monitor.write_message(f"message: {message}")
         return
