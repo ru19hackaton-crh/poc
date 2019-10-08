@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
+import logging
 from tornado import websocket
 import tornado.ioloop
+from tornado.log import enable_pretty_logging
+enable_pretty_logging()
 
 
 class CommonBrainHandler(websocket.WebSocketHandler):
@@ -9,10 +12,10 @@ class CommonBrainHandler(websocket.WebSocketHandler):
         return True
 
     def open(self):
-        print("Websocket Opened")
+        logging.info("Websocket Opened")
 
     def on_close(self):
-        print("Websocket closed")
+        logging.info("Websocket closed")
 
 class MonitorHandler(CommonBrainHandler):
     def on_message(self, message):
