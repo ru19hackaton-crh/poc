@@ -6,10 +6,14 @@
   <title>WebSocket Test</title>
   <script language="javascript" type="text/javascript">
     var wsUri = "ws://localhost:9000/monitor";
+    var websocket;
     var output;
+    var manual;
 
     function init() {
       output = document.getElementById("output");
+      manual = document.getElementById("manual");
+      configureManual();
       testWebSocket();
     }
 
@@ -31,7 +35,7 @@
 
     function onOpen(evt) {
       writeToScreen("CONNECTED");
-      doSend("WebSocket rocks");
+      //doSend("WebSocket rocks");
     }
 
     function onClose(evt) {
@@ -40,7 +44,7 @@
 
     function onMessage(evt) {
       writeToScreen('<span style="color: blue;">RESPONSE: ' + evt.data + '</span>');
-      websocket.close();
+      //websocket.close();
     }
 
     function onError(evt) {
@@ -59,6 +63,59 @@
       output.appendChild(pre);
     }
 
+    function configureManual() {
+      manual.addEventListener("click", activateManual)
+    }
+
+    function activateManual() {
+      websocket.send("manual on");
+      document.onkeydown = function(e) {
+        if (e.repeat) return;
+        switch (e.key) {
+          case "ArrowLeft":
+            websocket.send("left down");
+            break;
+          case "ArrowRight":
+            websocket.send("right down");
+            break;
+          case "ArrowUp":
+            websocket.send("up down");
+            break;
+          case "ArrowDown":
+            websocket.send("down down");
+            break;
+        }
+      };
+      document.onkeyup = function(e) {
+        switch (e.key) {
+          case "ArrowLeft":
+            websocket.send("left up");
+            break;
+          case "ArrowRight":
+            websocket.send("right up");
+            break;
+          case "ArrowUp":
+            websocket.send("up up");
+            break;
+          case "ArrowDown":
+            websocket.send("down up");
+            break;
+        }
+      };
+      manual.removeEventListener("click", activateManual)
+      manual.addEventListener("click", disableManual)
+      manual.value = "Auto";
+    }
+
+    function disableManual() {
+      manual.removeEventListener("click", disableManual)
+      websocket.send("manual off");
+      configureManual();
+      document.onkeyup = null;
+      document.onkeydown = null;
+      manual.value = "Manual";
+    }
+
     window.addEventListener("load", init, false);
   </script>
 </head>
@@ -67,6 +124,8 @@
   <h2>WebSocket Test</h2>
 
   <div id="output"></div>
+
+  <input id="manual" type="button" value="Manual drive" />
 </body>
 
 </html>
