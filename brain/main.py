@@ -11,6 +11,11 @@ class Brain:
         self._monitor = None
         self._robot = None
 
+    def operate(self):
+        # brain loop
+        #logging.info("foo")
+        return
+
     @property
     def monitor(self):
         return self._monitor
@@ -66,4 +71,5 @@ if __name__ == "__main__":
         ])
     application.listen(9000)
 
+    brain_operating.start()
     tornado.ioloop.IOLoop.current().start()
