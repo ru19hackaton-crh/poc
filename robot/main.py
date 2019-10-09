@@ -27,23 +27,28 @@ class Logic:
 
     def __init__(self):
         self.current = None
+        self.conn = None
 
     async def read_messages(self):
         url = "ws://localhost:9000/robot"
-        conn = await websocket_connect(url)
+        self.conn = await websocket_connect(url)
         while True:
-            msg = await conn.read_message()
+            msg = await self.conn.read_message()
             if msg is None: break
             if msg.startswith("COMMAND:"):
                 command = msg.replace("COMMAND: ", "")
                 self.current = command
+            else:
+                logging.info("< %s" % msg)
 
     def run(self):
         if self.current:
             if self.current == "STOP":
                 command_stop()
+                self.conn.write_message("DONE")
             elif self.current.startswith("DRIVE"):
                 command_drive(self.current)
+                self.conn.write_message("DONE")
             else:
                 logging.info("UNKNOWN: %s" % self.current)
 

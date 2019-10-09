@@ -24,13 +24,15 @@ class ManualDriveBehaviour(py_trees.behaviour.Behaviour):
     def update(self):
         if self.blackboard.manual:
             if self.blackboard.keys:
-                self.brain.robot.write_message(f"COMMAND: DRIVE:{self.blackboard.keys}")
+                new_command = f"DRIVE:{self.blackboard.keys}"
             else:
-                self.brain.robot.write_message(f"COMMAND: STOP")
+                new_command = "STOP"
+            self.brain.robot.write_message(f"COMMAND: {new_command}")
             return Status.RUNNING
         elif self.status == Status.RUNNING:
             # inform robot that manual is off
-            self.brain.robot.write_message(f"COMMAND: STOP")
+            new_command = "STOP"
+            self.brain.robot.write_message(f"COMMAND: {new_command}")
             return Status.SUCCESS
         else:
             return py_trees.common.Status.INVALID
@@ -53,9 +55,10 @@ class Brain:
         self.tree = create_tree(self)
         self.behaviour_tree = py_trees.trees.BehaviourTree(self.tree)
 
-        self.bb = BlackboardClient(name="Brain", write={"manual", "keys"})
+        self.bb = BlackboardClient(name="Brain", write={"manual", "keys", "robot_response"})
         self.bb.manual = False
         self.bb.keys = set()
+        self.bb.robot_response = None
 
     def operate(self):
         py_trees.blackboard.Blackboard.enable_activity_stream(maximum_size=100)
@@ -88,7 +91,10 @@ class Brain:
         self.bb.manual = state
 
     def parse_robot(self, message):
-        self.robot.write_message(u"Robot said: %s" % message)
+        if message == "DONE":
+            self.bb.robot_response = True
+        else:
+            self.robot.write_message(u"Robot said: %s" % message)
 
     def parse_monitor(self, message):
         if message == "manual on":
@@ -124,6 +130,7 @@ class MonitorHandler(CommonBrainHandler):
         self.brain.monitor = self
 
     def on_message(self, message):
+        logging.info(f"Monitor: {message}")
         self.brain.parse_monitor(message)
 
 class RobotHandler(CommonBrainHandler):
@@ -131,6 +138,7 @@ class RobotHandler(CommonBrainHandler):
         self.brain.robot = self
 
     def on_message(self, message):
+        logging.info(f"Robot: {message}")
         self.brain.parse_robot(message)
 
 
