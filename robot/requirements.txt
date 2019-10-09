@@ -1,2 +1,2 @@
 python-ev3dev
-websockets
+tornado

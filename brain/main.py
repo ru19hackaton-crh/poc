@@ -25,12 +25,12 @@ class ManualDriveBehaviour(py_trees.behaviour.Behaviour):
         if self.blackboard.manual:
             if self.status != Status.RUNNING:
                 # inform robot that manual is on
-                pass
-            if self.blackboard.keys:
-                #self.brain.robot.write_message(f"keys: {self.blackboard.keys}")
+                self.brain.robot.write_message(f"manual: True")
+            self.brain.robot.write_message(f"keys: {self.blackboard.keys}")
             return Status.RUNNING
         elif self.status == Status.RUNNING:
             # inform robot that manual is off
+            self.brain.robot.write_message(f"manual: False")
             return Status.SUCCESS
         else:
             return py_trees.common.Status.INVALID
