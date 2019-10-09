@@ -13,6 +13,16 @@ enable_pretty_logging()
 
 import json
 
+def command_stop():
+    logging.info("Stopping")
+    tank_drive = MoveTank(OUTPUT_A, OUTPUT_B)
+    tank_drive.stop()
+
+def command_drive(directions):
+    logging.info("Driving")
+    tank_drive = MoveTank(OUTPUT_A, OUTPUT_B)
+    tank_drive.on(SpeedPercent(100),SpeedPercent(100))
+
 class Logic:
 
     def __init__(self):
@@ -29,9 +39,15 @@ class Logic:
                 self.current = command
 
     def run(self):
-        logging.info("# %s" % self.current)
+        if self.current:
+            if self.current == "STOP":
+                command_stop()
+            elif self.current.startswith("DRIVE"):
+                command_drive(self.current)
+            else:
+                logging.info("UNKNOWN: %s" % self.current)
 
-if __name__ == "__main__":
+def main():
     logging.info("hello from robot")
 
     logic = Logic()
@@ -39,3 +55,6 @@ if __name__ == "__main__":
     tornado.ioloop.IOLoop.current().spawn_callback(logic.read_messages)
     logic_processing.start()
     tornado.ioloop.IOLoop.current().start()
+
+if __name__ == "__main__":
+    main()
